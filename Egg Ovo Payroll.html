@@ -1,0 +1,840 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Egg Ovo — Payroll</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --egg: #F5C842;
+  --egg-dark: #D4A017;
+  --green: #1A3C34;
+  --green-mid: #2D6B5E;
+  --green-light: #E8F5F1;
+  --green-pale: #F2FAF7;
+  --ink: #0F1F1C;
+  --muted: #6B8C85;
+  --border: #C8DDD9;
+  --surface: #FFFFFF;
+  --bg: #F5F9F8;
+  --danger: #C0392B;
+  --danger-bg: #FDF0EF;
+  --success: #1A6B4A;
+  --success-bg: #E8F5EE;
+  --warning-bg: #FEF9E7;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--ink);min-height:100vh}
+
+/* PASSWORD SCREEN */
+#lock-screen{
+  position:fixed;inset:0;z-index:9999;
+  background:var(--green);
+  display:flex;align-items:center;justify-content:center;
+  flex-direction:column;gap:24px;
+}
+.lock-logo{
+  font-size:28px;font-weight:600;color:var(--egg);letter-spacing:-0.5px;
+  display:flex;align-items:center;gap:10px;
+}
+.lock-logo span{color:#fff;font-weight:300}
+.lock-box{
+  background:#fff;border-radius:16px;padding:32px 36px;width:340px;
+  box-shadow:0 24px 60px rgba(0,0,0,0.3);
+}
+.lock-label{font-size:13px;color:var(--muted);margin-bottom:8px;font-weight:500}
+.lock-input{
+  width:100%;padding:12px 14px;border:1.5px solid var(--border);
+  border-radius:10px;font-size:15px;font-family:'DM Sans',sans-serif;
+  color:var(--ink);outline:none;letter-spacing:0.05em;
+  transition:border-color 0.2s;
+}
+.lock-input:focus{border-color:var(--green-mid)}
+.lock-btn{
+  width:100%;margin-top:14px;padding:12px;
+  background:var(--green);color:#fff;border:none;border-radius:10px;
+  font-size:15px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;
+  transition:background 0.2s;
+}
+.lock-btn:hover{background:var(--green-mid)}
+.lock-error{color:var(--danger);font-size:13px;margin-top:8px;display:none;text-align:center}
+.lock-hint{font-size:12px;color:rgba(255,255,255,0.4);text-align:center}
+
+/* MAIN APP */
+#app{display:none}
+.topbar{
+  background:var(--green);padding:0 32px;height:60px;
+  display:flex;align-items:center;justify-content:space-between;
+  position:sticky;top:0;z-index:100;
+}
+.topbar-logo{
+  font-size:20px;font-weight:600;color:var(--egg);
+  display:flex;align-items:center;gap:8px;
+}
+.topbar-logo em{color:rgba(255,255,255,0.5);font-style:normal;font-weight:300;font-size:14px;margin-left:4px}
+.topbar-nav{display:flex;gap:4px}
+.nav-btn{
+  padding:7px 16px;border-radius:8px;font-size:13px;font-weight:500;
+  cursor:pointer;border:none;background:transparent;color:rgba(255,255,255,0.65);
+  font-family:'DM Sans',sans-serif;transition:all 0.15s;
+}
+.nav-btn:hover{background:rgba(255,255,255,0.1);color:#fff}
+.nav-btn.active{background:var(--egg);color:var(--green);font-weight:600}
+
+.main{max-width:860px;margin:0 auto;padding:32px 24px}
+.page{display:none}
+.page.active{display:block}
+
+/* CARDS */
+.card{
+  background:var(--surface);border-radius:14px;
+  border:1px solid var(--border);padding:20px 24px;margin-bottom:16px;
+}
+.card-title{
+  font-size:11px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;
+  color:var(--muted);margin-bottom:16px;
+}
+
+/* METRIC CARDS */
+.metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:24px}
+.metric{
+  background:var(--surface);border-radius:12px;padding:16px 18px;
+  border:1px solid var(--border);
+}
+.metric-label{font-size:11px;color:var(--muted);font-weight:500;margin-bottom:6px}
+.metric-value{font-size:22px;font-weight:600;color:var(--ink)}
+.metric-value.accent{color:var(--green-mid)}
+
+/* FORM ELEMENTS */
+.form-grid{display:grid;gap:14px;margin-bottom:16px}
+.form-grid.cols2{grid-template-columns:1fr 1fr}
+.form-grid.cols3{grid-template-columns:1fr 1fr 1fr}
+.form-group label{font-size:12px;font-weight:600;color:var(--muted);display:block;margin-bottom:5px;letter-spacing:0.03em}
+.form-group input,.form-group select{
+  width:100%;padding:9px 12px;border:1.5px solid var(--border);
+  border-radius:8px;font-size:14px;font-family:'DM Sans',sans-serif;
+  color:var(--ink);background:#fff;outline:none;transition:border-color 0.15s;
+}
+.form-group input:focus,.form-group select:focus{border-color:var(--green-mid)}
+.form-group input[readonly]{background:var(--bg);color:var(--muted)}
+
+/* BUTTONS */
+.btn{
+  padding:9px 18px;border-radius:8px;font-size:13px;font-weight:600;
+  cursor:pointer;border:1.5px solid var(--border);background:#fff;
+  color:var(--ink);font-family:'DM Sans',sans-serif;transition:all 0.15s;
+  display:inline-flex;align-items:center;gap:6px;
+}
+.btn:hover{border-color:var(--green-mid);background:var(--green-pale)}
+.btn.primary{background:var(--green);color:#fff;border-color:var(--green)}
+.btn.primary:hover{background:var(--green-mid);border-color:var(--green-mid)}
+.btn.accent{background:var(--egg);color:var(--green);border-color:var(--egg)}
+.btn.accent:hover{background:var(--egg-dark);border-color:var(--egg-dark)}
+.btn.danger{color:var(--danger);border-color:#f0b8b4}
+.btn.danger:hover{background:var(--danger-bg)}
+.btn.sm{padding:5px 10px;font-size:12px}
+.btn-row{display:flex;gap:8px;justify-content:flex-end;margin-top:16px}
+
+/* TIMECARD TABLE */
+.tc-wrap{overflow-x:auto;margin:-4px}
+table.tc{width:100%;border-collapse:collapse;font-size:13px}
+.tc th{
+  text-align:left;padding:8px 10px;
+  background:var(--green);color:rgba(255,255,255,0.85);
+  font-size:11px;font-weight:600;letter-spacing:0.05em;
+}
+.tc th:first-child{border-radius:8px 0 0 0}
+.tc th:last-child{border-radius:0 8px 0 0}
+.tc td{padding:6px 8px;border-bottom:1px solid var(--border)}
+.tc tr:last-child td{border-bottom:none}
+.tc tr:hover td{background:var(--green-pale)}
+.tc input[type=time],.tc input[type=number]{
+  padding:5px 8px;border:1px solid var(--border);border-radius:6px;
+  font-size:13px;font-family:'DM Mono',monospace;color:var(--ink);
+  background:#fff;outline:none;width:100%;
+}
+.tc input:focus{border-color:var(--green-mid)}
+.day-label{font-weight:600;font-size:13px;color:var(--green);width:36px}
+.hrs-cell{font-family:'DM Mono',monospace;font-size:13px;font-weight:500;min-width:60px}
+
+/* RESULT BOX */
+.result-box{
+  background:var(--green);border-radius:12px;padding:20px 24px;
+  margin-top:16px;
+}
+.result-row{display:flex;justify-content:space-between;padding:4px 0;font-size:14px;color:rgba(255,255,255,0.7)}
+.result-row span:last-child{font-family:'DM Mono',monospace;font-weight:500;color:#fff}
+.result-row.total{
+  font-size:18px;font-weight:600;color:#fff;
+  border-top:1px solid rgba(255,255,255,0.2);margin-top:10px;padding-top:12px;
+}
+.result-row.total span:last-child{color:var(--egg);font-size:22px}
+
+/* BADGES */
+.badge{display:inline-block;padding:3px 9px;border-radius:20px;font-size:11px;font-weight:600}
+.badge.ot{background:var(--warning-bg);color:#7D5A00}
+.badge.reg{background:var(--success-bg);color:var(--success)}
+
+/* EMPLOYEE LIST */
+.emp-item{
+  display:flex;align-items:center;gap:12px;
+  padding:12px 0;border-bottom:1px solid var(--border);
+}
+.emp-item:last-child{border-bottom:none}
+.avatar{
+  width:38px;height:38px;border-radius:50%;
+  background:var(--egg);color:var(--green);
+  display:flex;align-items:center;justify-content:center;
+  font-weight:700;font-size:13px;flex-shrink:0;
+}
+.emp-info{flex:1}
+.emp-name{font-weight:600;font-size:14px}
+.emp-meta{font-size:12px;color:var(--muted);margin-top:1px;font-family:'DM Mono',monospace}
+
+/* HISTORY CARDS */
+.hist-card{
+  background:var(--surface);border-radius:12px;border:1px solid var(--border);
+  padding:16px 20px;margin-bottom:10px;
+  display:flex;align-items:center;gap:16px;
+  transition:border-color 0.15s;
+}
+.hist-card:hover{border-color:var(--green-mid)}
+.hist-week{
+  background:var(--green);color:#fff;border-radius:8px;
+  padding:6px 10px;text-align:center;min-width:56px;flex-shrink:0;
+}
+.hist-week-day{font-size:18px;font-weight:700;line-height:1}
+.hist-week-label{font-size:10px;color:rgba(255,255,255,0.6);margin-top:2px}
+.hist-info{flex:1}
+.hist-name{font-weight:600;font-size:14px}
+.hist-meta{font-size:12px;color:var(--muted);margin-top:2px}
+.hist-pay{font-size:20px;font-weight:700;color:var(--green-mid);font-family:'DM Mono',monospace;flex-shrink:0}
+
+/* MONTHLY */
+.month-emp-card{
+  background:var(--surface);border-radius:12px;border:1px solid var(--border);
+  padding:16px 20px;margin-bottom:10px;
+}
+.month-bar-bg{background:var(--bg);border-radius:4px;height:6px;margin-top:10px;overflow:hidden}
+.month-bar{background:var(--green-mid);height:6px;border-radius:4px;transition:width 0.4s}
+.month-total-box{
+  background:var(--green);border-radius:12px;padding:18px 24px;
+  display:flex;justify-content:space-between;align-items:center;margin-top:8px;
+}
+.month-total-label{color:rgba(255,255,255,0.7);font-size:14px}
+.month-total-val{color:var(--egg);font-size:24px;font-weight:700;font-family:'DM Mono',monospace}
+
+.empty{text-align:center;padding:40px;color:var(--muted);font-size:14px}
+.filter-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px}
+.filter-row select{padding:7px 12px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;font-family:'DM Sans',sans-serif;color:var(--ink);background:#fff;outline:none}
+.filter-row select:focus{border-color:var(--green-mid)}
+
+/* PRINT */
+@media print {
+  #lock-screen,#app,.topbar,.no-print{display:none!important}
+  #print-area{display:block!important}
+  body{background:#fff;font-family:'DM Sans',sans-serif}
+}
+#print-area{display:none}
+.print-page{
+  width:100%;max-width:680px;margin:0 auto;
+  font-family:'DM Sans',sans-serif;color:#0F1F1C;
+}
+.print-header{
+  display:flex;justify-content:space-between;align-items:flex-start;
+  padding-bottom:16px;border-bottom:2px solid #1A3C34;margin-bottom:20px;
+}
+.print-logo{font-size:22px;font-weight:700;color:#1A3C34}
+.print-logo span{color:#F5C842}
+.print-title-block{text-align:right}
+.print-doc-title{font-size:16px;font-weight:700;color:#1A3C34}
+.print-date{font-size:12px;color:#6B8C85;margin-top:2px}
+.print-info-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:20px}
+.print-info-box{background:#F5F9F8;border-radius:8px;padding:12px 14px}
+.print-info-label{font-size:10px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:#6B8C85;margin-bottom:3px}
+.print-info-val{font-size:14px;font-weight:600;color:#0F1F1C}
+.print-table{width:100%;border-collapse:collapse;margin-bottom:20px;font-size:13px}
+.print-table th{background:#1A3C34;color:#fff;padding:8px 10px;text-align:left;font-size:11px;font-weight:600;letter-spacing:0.05em}
+.print-table td{padding:7px 10px;border-bottom:1px solid #C8DDD9}
+.print-table tr:nth-child(even) td{background:#F5F9F8}
+.print-table tr:last-child td{border-bottom:none}
+.print-summary{background:#1A3C34;border-radius:10px;padding:16px 20px;margin-bottom:24px}
+.print-sum-row{display:flex;justify-content:space-between;padding:3px 0;font-size:13px;color:rgba(255,255,255,0.7)}
+.print-sum-row span:last-child{font-family:'DM Mono',monospace;color:#fff}
+.print-sum-row.total{font-size:17px;font-weight:700;color:#fff;border-top:1px solid rgba(255,255,255,0.2);margin-top:8px;padding-top:10px}
+.print-sum-row.total span:last-child{color:#F5C842;font-size:20px}
+.print-sign{margin-top:32px;padding-top:20px;border-top:1px solid #C8DDD9}
+.print-sign-title{font-size:11px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:#6B8C85;margin-bottom:16px}
+.sign-block{margin-bottom:24px}
+.sign-name{font-size:15px;font-weight:600;color:#0F1F1C;margin-bottom:4px}
+.sign-role{font-size:12px;color:#6B8C85;margin-bottom:20px}
+.sign-line-wrap{display:flex;align-items:flex-end;gap:12px}
+.sign-line{flex:1;border-bottom:1.5px solid #0F1F1C;height:40px}
+.sign-date-line{width:120px;border-bottom:1.5px solid #0F1F1C;height:40px}
+.sign-sub{font-size:10px;color:#6B8C85;margin-top:4px}
+</style>
+</head>
+<body>
+
+<!-- LOCK SCREEN -->
+<div id="lock-screen">
+  <div class="lock-logo">🥚 Egg <span>Ovo</span></div>
+  <div class="lock-box">
+    <div class="lock-label">Enter password to continue</div>
+    <input class="lock-input" type="password" id="pw-input" placeholder="••••••••••••" onkeydown="if(event.key==='Enter')checkPw()">
+    <div class="lock-error" id="pw-error">Incorrect password. Please try again.</div>
+    <button class="lock-btn" onclick="checkPw()">Unlock</button>
+  </div>
+  <div class="lock-hint">Egg Ovo Payroll System · Private</div>
+</div>
+
+<!-- MAIN APP -->
+<div id="app">
+  <div class="topbar no-print">
+    <div class="topbar-logo">🥚 Egg Ovo <em>Payroll</em></div>
+    <div class="topbar-nav">
+      <button class="nav-btn active" onclick="showPage('timecard',this)">Timecard</button>
+      <button class="nav-btn" onclick="showPage('employees',this)">Employees</button>
+      <button class="nav-btn" onclick="showPage('history',this)">History</button>
+      <button class="nav-btn" onclick="showPage('monthly',this)">Monthly</button>
+    </div>
+  </div>
+
+  <div class="main">
+
+    <!-- TIMECARD PAGE -->
+    <div id="page-timecard" class="page active">
+      <div class="card">
+        <div class="card-title">Pay Period Info</div>
+        <div class="form-grid cols2">
+          <div class="form-group">
+            <label>Employee</label>
+            <select id="sel-emp" onchange="loadEmpRate()">
+              <option value="">— Select employee —</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Week Start Date</label>
+            <input type="date" id="week-start">
+          </div>
+        </div>
+        <div class="form-grid cols2">
+          <div class="form-group">
+            <label>Regular Rate ($/hr)</label>
+            <input type="number" id="reg-rate" step="0.01" placeholder="15.00" oninput="calcPay()">
+          </div>
+          <div class="form-group">
+            <label>OT Rate ($/hr) — auto 1.5×</label>
+            <input type="number" id="ot-rate" step="0.01" readonly>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Daily Timecard</div>
+        <div class="tc-wrap">
+          <table class="tc">
+            <thead>
+              <tr>
+                <th style="width:44px">Day</th>
+                <th>Clock In</th>
+                <th>Clock Out</th>
+                <th style="width:90px">Break (min)</th>
+                <th style="width:80px">Hours</th>
+              </tr>
+            </thead>
+            <tbody id="days-body"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div id="result-box" class="result-box" style="display:none">
+        <div class="result-row"><span>Regular Hours</span><span id="r-reg-hrs">0h</span></div>
+        <div class="result-row"><span>Overtime Hours (OT)</span><span id="r-ot-hrs">0h</span></div>
+        <div class="result-row" style="margin-top:8px"><span>Regular Pay</span><span id="r-reg-pay">$0.00</span></div>
+        <div class="result-row"><span>Overtime Pay</span><span id="r-ot-pay">$0.00</span></div>
+        <div class="result-row total"><span>Weekly Gross Pay</span><span id="r-total">$0.00</span></div>
+      </div>
+
+      <div class="btn-row no-print">
+        <button class="btn" onclick="clearForm()">Clear</button>
+        <button class="btn accent" onclick="printSlip()">🖨 Print Pay Stub</button>
+        <button class="btn primary" onclick="saveRecord()">Save Record</button>
+      </div>
+    </div>
+
+    <!-- EMPLOYEES PAGE -->
+    <div id="page-employees" class="page">
+      <div class="card">
+        <div class="card-title">Add New Employee</div>
+        <div class="form-grid cols3">
+          <div class="form-group" style="grid-column:span 2">
+            <label>Full Name</label>
+            <input type="text" id="new-name" placeholder="e.g. Sarah Kim">
+          </div>
+          <div class="form-group">
+            <label>Base Rate ($/hr)</label>
+            <input type="number" id="new-rate" step="0.01" placeholder="15.00">
+          </div>
+        </div>
+        <button class="btn primary" onclick="addEmployee()">+ Add Employee</button>
+      </div>
+      <div class="card">
+        <div class="card-title">Employee Roster</div>
+        <div id="emp-list"><p class="empty">No employees registered yet</p></div>
+      </div>
+    </div>
+
+    <!-- HISTORY PAGE -->
+    <div id="page-history" class="page">
+      <div class="metrics" id="hist-metrics">
+        <div class="metric"><div class="metric-label">Total Records</div><div class="metric-value" id="h-count">0</div></div>
+        <div class="metric"><div class="metric-label">Employees</div><div class="metric-value" id="h-emps">0</div></div>
+        <div class="metric"><div class="metric-label">Total Hours</div><div class="metric-value" id="h-hours">0h</div></div>
+        <div class="metric"><div class="metric-label">Total Paid</div><div class="metric-value accent" id="h-total">$0</div></div>
+      </div>
+      <div class="filter-row">
+        <span style="font-size:13px;font-weight:600;color:var(--muted)">WEEKLY RECORDS</span>
+        <select id="filter-emp" onchange="renderHistory()">
+          <option value="">All Employees</option>
+        </select>
+      </div>
+      <div id="history-list"><p class="empty">No records saved yet</p></div>
+    </div>
+
+    <!-- MONTHLY PAGE -->
+    <div id="page-monthly" class="page">
+      <div class="card" style="padding:16px 20px">
+        <div style="display:flex;gap:12px;align-items:flex-end">
+          <div class="form-group" style="margin:0">
+            <label>Year</label>
+            <select id="m-year" onchange="renderMonthly()" style="width:100px"></select>
+          </div>
+          <div class="form-group" style="margin:0">
+            <label>Month</label>
+            <select id="m-month" onchange="renderMonthly()" style="width:130px">
+              <option value="0">January</option><option value="1">February</option>
+              <option value="2">March</option><option value="3">April</option>
+              <option value="4">May</option><option value="5">June</option>
+              <option value="6">July</option><option value="7">August</option>
+              <option value="8">September</option><option value="9">October</option>
+              <option value="10">November</option><option value="11">December</option>
+            </select>
+          </div>
+        </div>
+      </div>
+      <div class="metrics" style="grid-template-columns:1fr 1fr;margin-bottom:16px">
+        <div class="metric"><div class="metric-label">Total Hours Worked</div><div class="metric-value" id="m-hours">0h</div></div>
+        <div class="metric"><div class="metric-label">Monthly Labor Cost</div><div class="metric-value accent" id="m-total">$0.00</div></div>
+      </div>
+      <div id="monthly-breakdown"><p class="empty">No data for this month</p></div>
+    </div>
+
+  </div><!-- /main -->
+</div><!-- /app -->
+
+<!-- PRINT AREA (only this prints) -->
+<div id="print-area"></div>
+
+<script>
+// PASSWORD
+function checkPw(){
+  const v=document.getElementById('pw-input').value;
+  const err=document.getElementById('pw-error');
+  if(v==='eggovo2027'){
+    document.getElementById('lock-screen').style.display='none';
+    document.getElementById('app').style.display='block';
+    loadData();initDays();populateEmpSelect();setDefaultDate();
+  } else {
+    err.style.display='block';
+    document.getElementById('pw-input').value='';
+    document.getElementById('pw-input').style.borderColor='#C0392B';
+    setTimeout(()=>{document.getElementById('pw-input').style.borderColor=''},1500);
+  }
+}
+document.addEventListener('keydown',e=>{
+  if(document.getElementById('lock-screen').style.display!=='none' && e.key==='Enter') checkPw();
+});
+
+// DATA
+const DAYS=['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+let employees=[],records=[];
+function loadData(){
+  try{employees=JSON.parse(localStorage.getItem('eo_emps')||'[]')}catch(e){employees=[]}
+  try{records=JSON.parse(localStorage.getItem('eo_recs')||'[]')}catch(e){records=[]}
+}
+function saveData(){
+  try{localStorage.setItem('eo_emps',JSON.stringify(employees))}catch(e){}
+  try{localStorage.setItem('eo_recs',JSON.stringify(records))}catch(e){}
+}
+
+// NAV
+function showPage(p,btn){
+  document.querySelectorAll('.page').forEach(el=>el.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(el=>el.classList.remove('active'));
+  document.getElementById('page-'+p).classList.add('active');
+  if(btn) btn.classList.add('active');
+  if(p==='history'){renderHistoryStats();renderHistory()}
+  if(p==='monthly'){initMonthly();renderMonthly()}
+  if(p==='employees'){renderEmpList()}
+}
+
+// DEFAULT DATE (Mon of current week)
+function setDefaultDate(){
+  const today=new Date();
+  const dow=today.getDay();
+  const mon=new Date(today);
+  mon.setDate(today.getDate()-(dow===0?6:dow-1));
+  document.getElementById('week-start').value=mon.toISOString().split('T')[0];
+}
+
+// TIMECARD
+function initDays(){
+  const tb=document.getElementById('days-body');
+  tb.innerHTML=DAYS.map((d,i)=>`
+    <tr>
+      <td><span class="day-label">${d}</span></td>
+      <td><input type="time" class="in-time" data-day="${i}" oninput="calcDay(${i})"></td>
+      <td><input type="time" class="out-time" data-day="${i}" oninput="calcDay(${i})"></td>
+      <td><input type="number" class="break-min" data-day="${i}" value="0" min="0" max="120" oninput="calcDay(${i})" style="width:70px"></td>
+      <td id="day-hrs-${i}" class="hrs-cell" style="color:var(--muted)">—</td>
+    </tr>`).join('');
+}
+
+function calcDay(i){
+  const inT=document.querySelector(`.in-time[data-day="${i}"]`).value;
+  const outT=document.querySelector(`.out-time[data-day="${i}"]`).value;
+  const brk=parseFloat(document.querySelector(`.break-min[data-day="${i}"]`).value)||0;
+  const cell=document.getElementById(`day-hrs-${i}`);
+  if(inT&&outT){
+    const [ih,im]=inT.split(':').map(Number);
+    const [oh,om]=outT.split(':').map(Number);
+    let mins=(oh*60+om)-(ih*60+im)-brk;
+    if(mins<0) mins+=1440;
+    const hrs=Math.max(mins/60,0);
+    cell.textContent=hrs>0?hrs.toFixed(2)+'h':'0h';
+    cell.style.color=hrs>8?'#D4A017':hrs>0?'var(--green-mid)':'var(--muted)';
+  } else {
+    cell.textContent='—';cell.style.color='var(--muted)';
+  }
+  calcPay();
+}
+
+function getTotalHours(){
+  let t=0;
+  for(let i=0;i<7;i++){
+    const inT=document.querySelector(`.in-time[data-day="${i}"]`).value;
+    const outT=document.querySelector(`.out-time[data-day="${i}"]`).value;
+    const brk=parseFloat(document.querySelector(`.break-min[data-day="${i}"]`).value)||0;
+    if(inT&&outT){
+      const [ih,im]=inT.split(':').map(Number);
+      const [oh,om]=outT.split(':').map(Number);
+      let mins=(oh*60+om)-(ih*60+im)-brk;
+      if(mins<0) mins+=1440;
+      if(mins>0) t+=mins/60;
+    }
+  }
+  return t;
+}
+
+function calcPay(){
+  const reg=parseFloat(document.getElementById('reg-rate').value)||0;
+  if(!reg){document.getElementById('result-box').style.display='none';return;}
+  const ot=reg*1.5;
+  document.getElementById('ot-rate').value=ot.toFixed(2);
+  const total=getTotalHours();
+  const regHrs=Math.min(total,40);
+  const otHrs=Math.max(total-40,0);
+  document.getElementById('r-reg-hrs').textContent=regHrs.toFixed(2)+'h';
+  document.getElementById('r-ot-hrs').textContent=otHrs.toFixed(2)+'h';
+  document.getElementById('r-reg-pay').textContent='$'+(regHrs*reg).toFixed(2);
+  document.getElementById('r-ot-pay').textContent='$'+(otHrs*ot).toFixed(2);
+  document.getElementById('r-total').textContent='$'+(regHrs*reg+otHrs*ot).toFixed(2);
+  document.getElementById('result-box').style.display='block';
+}
+
+function loadEmpRate(){
+  const id=document.getElementById('sel-emp').value;
+  const emp=employees.find(e=>e.id===id);
+  if(emp){document.getElementById('reg-rate').value=emp.rate;calcPay();}
+}
+
+function populateEmpSelect(){
+  const s=document.getElementById('sel-emp');
+  const cur=s.value;
+  s.innerHTML='<option value="">— Select employee —</option>'+employees.map(e=>`<option value="${e.id}">${e.name}</option>`).join('');
+  if(cur) s.value=cur;
+  const fe=document.getElementById('filter-emp');
+  if(fe) fe.innerHTML='<option value="">All Employees</option>'+employees.map(e=>`<option value="${e.id}">${e.name}</option>`).join('');
+}
+
+function getDayData(){
+  return DAYS.map((d,i)=>{
+    const inT=document.querySelector(`.in-time[data-day="${i}"]`).value;
+    const outT=document.querySelector(`.out-time[data-day="${i}"]`).value;
+    const brk=parseFloat(document.querySelector(`.break-min[data-day="${i}"]`).value)||0;
+    let hrs=0;
+    if(inT&&outT){
+      const [ih,im]=inT.split(':').map(Number);
+      const [oh,om]=outT.split(':').map(Number);
+      let mins=(oh*60+om)-(ih*60+im)-brk;
+      if(mins<0) mins+=1440;
+      hrs=Math.max(mins/60,0);
+    }
+    return{day:d,in:inT,out:outT,break:brk,hrs};
+  });
+}
+
+function saveRecord(){
+  const empId=document.getElementById('sel-emp').value;
+  const weekStart=document.getElementById('week-start').value;
+  const reg=parseFloat(document.getElementById('reg-rate').value);
+  if(!empId||!weekStart||!reg){alert('Please select an employee, week start date, and hourly rate.');return;}
+  const emp=employees.find(e=>e.id===empId);
+  const total=getTotalHours();
+  const regHrs=Math.min(total,40);
+  const otHrs=Math.max(total-40,0);
+  const ot=reg*1.5;
+  const grand=regHrs*reg+otHrs*ot;
+  records.push({id:'r'+Date.now(),empId,empName:emp.name,weekStart,regRate:reg,otRate:ot,totalHrs:total,regHrs,otHrs,regPay:regHrs*reg,otPay:otHrs*ot,total:grand,days:getDayData(),savedAt:new Date().toISOString()});
+  saveData();
+  alert(`Saved!\n${emp.name} — $${grand.toFixed(2)}`);
+}
+
+function clearForm(){
+  document.getElementById('sel-emp').value='';
+  document.getElementById('week-start').value='';
+  document.getElementById('reg-rate').value='';
+  document.getElementById('ot-rate').value='';
+  document.getElementById('result-box').style.display='none';
+  initDays();setDefaultDate();
+}
+
+// EMPLOYEES
+function addEmployee(){
+  const name=document.getElementById('new-name').value.trim();
+  const rate=parseFloat(document.getElementById('new-rate').value);
+  if(!name||!rate){alert('Please enter name and rate.');return;}
+  employees.push({id:'e'+Date.now(),name,rate});
+  saveData();populateEmpSelect();renderEmpList();
+  document.getElementById('new-name').value='';
+  document.getElementById('new-rate').value='';
+}
+
+function renderEmpList(){
+  const el=document.getElementById('emp-list');
+  if(!employees.length){el.innerHTML='<p class="empty">No employees registered yet</p>';return;}
+  el.innerHTML=employees.map(e=>`
+    <div class="emp-item">
+      <div class="avatar">${e.name.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase()}</div>
+      <div class="emp-info">
+        <div class="emp-name">${e.name}</div>
+        <div class="emp-meta">$${parseFloat(e.rate).toFixed(2)}/hr · OT $${(e.rate*1.5).toFixed(2)}/hr</div>
+      </div>
+      <button class="btn sm danger" onclick="deleteEmp('${e.id}')">Remove</button>
+    </div>`).join('');
+}
+
+function deleteEmp(id){
+  if(!confirm('Remove this employee?'))return;
+  employees=employees.filter(e=>e.id!==id);
+  saveData();populateEmpSelect();renderEmpList();
+}
+
+// HISTORY
+function renderHistoryStats(){
+  const uniq=new Set(records.map(r=>r.empId)).size;
+  const hrs=records.reduce((s,r)=>s+r.totalHrs,0);
+  const pay=records.reduce((s,r)=>s+r.total,0);
+  document.getElementById('h-count').textContent=records.length;
+  document.getElementById('h-emps').textContent=uniq;
+  document.getElementById('h-hours').textContent=hrs.toFixed(1)+'h';
+  document.getElementById('h-total').textContent='$'+pay.toFixed(2);
+}
+
+function renderHistory(){
+  const filterId=document.getElementById('filter-emp')?.value||'';
+  let list=records.slice().sort((a,b)=>b.weekStart.localeCompare(a.weekStart));
+  if(filterId) list=list.filter(r=>r.empId===filterId);
+  const el=document.getElementById('history-list');
+  if(!list.length){el.innerHTML='<p class="empty">No records found</p>';return;}
+  el.innerHTML=list.map(r=>{
+    const d=new Date(r.weekStart+'T00:00:00');
+    const day=d.getDate();
+    const mon=d.toLocaleString('en-US',{month:'short'});
+    return`<div class="hist-card">
+      <div class="hist-week"><div class="hist-week-day">${day}</div><div class="hist-week-label">${mon}</div></div>
+      <div class="hist-info">
+        <div class="hist-name">${r.empName}</div>
+        <div class="hist-meta">${r.totalHrs.toFixed(2)}h total
+          · <span class="badge reg">REG ${r.regHrs.toFixed(2)}h</span>
+          ${r.otHrs>0?` <span class="badge ot">OT ${r.otHrs.toFixed(2)}h</span>`:''}
+        </div>
+      </div>
+      <div class="hist-pay">$${r.total.toFixed(2)}</div>
+      <div style="display:flex;gap:6px;flex-shrink:0">
+        <button class="btn sm" onclick="printRecord('${r.id}')">🖨 Print</button>
+        <button class="btn sm danger" onclick="deleteRecord('${r.id}')">Delete</button>
+      </div>
+    </div>`}).join('');
+}
+
+function deleteRecord(id){
+  if(!confirm('Delete this record?'))return;
+  records=records.filter(r=>r.id!==id);
+  saveData();renderHistory();renderHistoryStats();
+}
+
+// MONTHLY
+function initMonthly(){
+  const ys=document.getElementById('m-year');
+  if(ys.children.length)return;
+  const cur=new Date().getFullYear();
+  for(let y=cur-1;y<=cur+2;y++) ys.innerHTML+=`<option value="${y}"${y===cur?' selected':''}>${y}</option>`;
+  document.getElementById('m-month').value=new Date().getMonth();
+}
+
+function renderMonthly(){
+  const year=parseInt(document.getElementById('m-year').value);
+  const month=parseInt(document.getElementById('m-month').value);
+  const filtered=records.filter(r=>{
+    const d=new Date(r.weekStart+'T00:00:00');
+    return d.getFullYear()===year&&d.getMonth()===month;
+  });
+  const totalHrs=filtered.reduce((s,r)=>s+r.totalHrs,0);
+  const totalPay=filtered.reduce((s,r)=>s+r.total,0);
+  document.getElementById('m-hours').textContent=totalHrs.toFixed(1)+'h';
+  document.getElementById('m-total').textContent='$'+totalPay.toFixed(2);
+  const byEmp={};
+  filtered.forEach(r=>{
+    if(!byEmp[r.empId]) byEmp[r.empId]={name:r.empName,hrs:0,pay:0,weeks:0};
+    byEmp[r.empId].hrs+=r.totalHrs;
+    byEmp[r.empId].pay+=r.total;
+    byEmp[r.empId].weeks++;
+  });
+  const el=document.getElementById('monthly-breakdown');
+  if(!filtered.length){el.innerHTML='<p class="empty">No data for this month</p>';return;}
+  const empCards=Object.values(byEmp).sort((a,b)=>b.pay-a.pay).map(e=>`
+    <div class="month-emp-card">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <div>
+          <div style="font-weight:600;font-size:15px">${e.name}</div>
+          <div style="font-size:12px;color:var(--muted);margin-top:2px">${e.weeks} week${e.weeks>1?'s':''} · ${e.hrs.toFixed(2)} hrs total</div>
+        </div>
+        <div style="font-size:20px;font-weight:700;color:var(--green-mid);font-family:'DM Mono',monospace">$${e.pay.toFixed(2)}</div>
+      </div>
+      <div class="month-bar-bg"><div class="month-bar" style="width:${totalHrs>0?Math.min(100,e.hrs/totalHrs*100).toFixed(1):0}%"></div></div>
+    </div>`).join('');
+  el.innerHTML=empCards+`
+    <div class="month-total-box">
+      <div class="month-total-label">Total Monthly Labor Cost</div>
+      <div class="month-total-val">$${totalPay.toFixed(2)}</div>
+    </div>`;
+}
+
+// PRINT - builds HTML and triggers print (only print-area shows)
+function buildPrintHTML(r,days){
+  const weekEnd=new Date(r.weekStart+'T00:00:00');
+  weekEnd.setDate(weekEnd.getDate()+6);
+  const fmtDate=d=>new Date(d+'T00:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
+  const fmtDateObj=d=>d.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
+  const dayRows=days.map(d=>`
+    <tr>
+      <td>${d.day}</td>
+      <td>${d.in||'—'}</td>
+      <td>${d.out||'—'}</td>
+      <td style="text-align:center">${d.break} min</td>
+      <td style="text-align:right;font-family:'DM Mono',monospace;font-weight:500">${d.hrs>0?d.hrs.toFixed(2)+' h':'—'}</td>
+    </tr>`).join('');
+  return`<div class="print-page">
+    <div class="print-header">
+      <div>
+        <div class="print-logo">🥚 Egg <span style="color:#F5C842">Ovo</span></div>
+        <div style="font-size:11px;color:#6B8C85;margin-top:3px">Weekly Pay Stub</div>
+      </div>
+      <div class="print-title-block">
+        <div class="print-doc-title">Pay Stub</div>
+        <div class="print-date">Week of ${fmtDate(r.weekStart)} – ${fmtDateObj(weekEnd)}</div>
+        <div class="print-date">Printed: ${new Date().toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})}</div>
+      </div>
+    </div>
+    <div class="print-info-grid">
+      <div class="print-info-box">
+        <div class="print-info-label">Employee</div>
+        <div class="print-info-val">${r.empName}</div>
+      </div>
+      <div class="print-info-box">
+        <div class="print-info-label">Pay Period</div>
+        <div class="print-info-val">${fmtDate(r.weekStart)} — ${fmtDateObj(weekEnd)}</div>
+      </div>
+      <div class="print-info-box">
+        <div class="print-info-label">Regular Rate</div>
+        <div class="print-info-val">$${r.regRate.toFixed(2)} / hr</div>
+      </div>
+      <div class="print-info-box">
+        <div class="print-info-label">Overtime Rate</div>
+        <div class="print-info-val">$${r.otRate.toFixed(2)} / hr (1.5×)</div>
+      </div>
+    </div>
+    <table class="print-table">
+      <thead>
+        <tr>
+          <th>Day</th><th>Clock In</th><th>Clock Out</th><th style="text-align:center">Break</th><th style="text-align:right">Hours</th>
+        </tr>
+      </thead>
+      <tbody>${dayRows}</tbody>
+    </table>
+    <div class="print-summary">
+      <div class="print-sum-row"><span>Regular Hours (up to 40h)</span><span>${r.regHrs.toFixed(2)} h × $${r.regRate.toFixed(2)}</span></div>
+      <div class="print-sum-row"><span>Regular Pay</span><span>$${r.regPay.toFixed(2)}</span></div>
+      ${r.otHrs>0?`<div class="print-sum-row"><span>Overtime Hours</span><span>${r.otHrs.toFixed(2)} h × $${r.otRate.toFixed(2)}</span></div>
+      <div class="print-sum-row"><span>Overtime Pay</span><span>$${r.otPay.toFixed(2)}</span></div>`:''}
+      <div class="print-sum-row total"><span>Total Gross Pay</span><span>$${r.total.toFixed(2)}</span></div>
+    </div>
+    <div class="print-sign">
+      <div class="print-sign-title">Employee Acknowledgment</div>
+      <div class="sign-block">
+        <div class="sign-name">${r.empName}</div>
+        <div class="sign-role">I acknowledge receipt of this pay stub and confirm the hours listed are accurate.</div>
+        <div class="sign-line-wrap">
+          <div>
+            <div class="sign-line" style="width:320px"></div>
+            <div class="sign-sub">Employee Signature</div>
+          </div>
+          <div>
+            <div class="sign-date-line"></div>
+            <div class="sign-sub">Date</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>`;
+}
+
+function printSlip(){
+  const empId=document.getElementById('sel-emp').value;
+  const weekStart=document.getElementById('week-start').value;
+  const reg=parseFloat(document.getElementById('reg-rate').value);
+  if(!empId||!weekStart||!reg){alert('Please select employee, week start, and rate.');return;}
+  const emp=employees.find(e=>e.id===empId);
+  const total=getTotalHours();
+  const regHrs=Math.min(total,40);
+  const otHrs=Math.max(total-40,0);
+  const ot=reg*1.5;
+  const grand=regHrs*reg+otHrs*ot;
+  const rec={id:'tmp',empId,empName:emp.name,weekStart,regRate:reg,otRate:ot,totalHrs:total,regHrs,otHrs,regPay:regHrs*reg,otPay:otHrs*ot,total:grand};
+  const days=getDayData();
+  document.getElementById('print-area').innerHTML=buildPrintHTML(rec,days);
+  window.print();
+}
+
+function printRecord(id){
+  const r=records.find(rec=>rec.id===id);
+  if(!r)return;
+  document.getElementById('print-area').innerHTML=buildPrintHTML(r,r.days);
+  window.print();
+}
+</script>
+</body>
+</html>
