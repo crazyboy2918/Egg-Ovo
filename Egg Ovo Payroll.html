@@ -1,0 +1,721 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Egg Ovo — Payroll</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Mono:wght@400;500&family=Figtree:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --egg:#F5C842;--egg-dark:#D4A017;--egg-pale:#FEF9E7;
+  --green:#1A3C34;--green-mid:#2D6B5E;--green-light:#3D8B7A;--green-pale:#EDF7F4;
+  --ink:#0D1F1B;--muted:#6B8C85;--border:#C5DDD8;--surface:#FFFFFF;--bg:#F4F8F7;
+  --danger:#C0392B;--danger-bg:#FDF0EF;
+  --radius:12px;--radius-sm:8px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Figtree',sans-serif;background:var(--bg);color:var(--ink);min-height:100vh;-webkit-font-smoothing:antialiased}
+#lock-screen{position:fixed;inset:0;z-index:9999;background:var(--green);display:flex;align-items:center;justify-content:center;flex-direction:column;gap:28px}
+.lock-logo{display:flex;align-items:center;gap:12px}
+.lock-logo-icon{width:52px;height:52px;background:var(--egg);border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:26px}
+.lock-logo-text{font-family:'Syne',sans-serif;font-size:26px;font-weight:800;color:#fff;letter-spacing:-0.5px}
+.lock-logo-text span{color:var(--egg)}
+.lock-card{background:#fff;border-radius:20px;padding:36px;width:360px;box-shadow:0 32px 80px rgba(0,0,0,0.35)}
+.lock-title{font-family:'Syne',sans-serif;font-size:18px;font-weight:700;color:var(--ink);margin-bottom:4px}
+.lock-sub{font-size:13px;color:var(--muted);margin-bottom:24px}
+.lock-label{font-size:12px;font-weight:600;color:var(--muted);letter-spacing:0.05em;text-transform:uppercase;margin-bottom:6px}
+.lock-input{width:100%;padding:13px 16px;border:2px solid var(--border);border-radius:var(--radius-sm);font-size:15px;font-family:'Figtree',sans-serif;color:var(--ink);outline:none;transition:border-color 0.2s;background:#FAFCFB}
+.lock-input:focus{border-color:var(--green-mid);background:#fff}
+.lock-input.error{border-color:var(--danger);animation:shake 0.3s ease}
+@keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
+.lock-err{font-size:13px;color:var(--danger);margin-top:8px;display:none;font-weight:500}
+.lock-btn{width:100%;margin-top:16px;padding:14px;background:var(--green);color:#fff;border:none;border-radius:var(--radius-sm);font-size:15px;font-weight:700;cursor:pointer;font-family:'Syne',sans-serif;transition:all 0.2s}
+.lock-btn:hover{background:var(--green-mid);transform:translateY(-1px);box-shadow:0 8px 20px rgba(26,60,52,0.3)}
+.lock-hint{font-size:12px;color:rgba(255,255,255,0.35);letter-spacing:0.03em}
+.topbar{background:var(--green);height:64px;padding:0 32px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;box-shadow:0 2px 20px rgba(0,0,0,0.15)}
+.topbar-logo{display:flex;align-items:center;gap:10px}
+.topbar-icon{width:36px;height:36px;background:var(--egg);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px}
+.topbar-name{font-family:'Syne',sans-serif;font-size:18px;font-weight:800;color:#fff;letter-spacing:-0.3px}
+.topbar-name span{color:var(--egg)}
+.topbar-tag{font-size:11px;color:rgba(255,255,255,0.4);font-weight:400;margin-left:4px;font-family:'Figtree',sans-serif}
+.topbar-nav{display:flex;gap:2px}
+.nav-btn{padding:8px 18px;border-radius:var(--radius-sm);font-size:13px;font-weight:600;cursor:pointer;border:none;background:transparent;color:rgba(255,255,255,0.6);font-family:'Figtree',sans-serif;transition:all 0.15s}
+.nav-btn:hover{background:rgba(255,255,255,0.1);color:#fff}
+.nav-btn.active{background:var(--egg);color:var(--green);font-weight:700}
+.sync-bar{background:var(--green-pale);border-bottom:1px solid var(--border);padding:6px 32px;display:flex;align-items:center;gap:8px;font-size:12px;color:var(--green-mid)}
+.sync-dot{width:8px;height:8px;border-radius:50%;background:var(--green-light);flex-shrink:0}
+.sync-dot.syncing{animation:pulse 1s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.3}}
+.sync-dot.error{background:var(--danger)}
+#app{display:none}
+.main{max-width:880px;margin:0 auto;padding:28px 24px}
+.page{display:none}
+.page.active{display:block;animation:fadeUp 0.25s ease}
+@keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+.card{background:var(--surface);border-radius:var(--radius);border:1px solid var(--border);padding:22px 26px;margin-bottom:16px;box-shadow:0 1px 4px rgba(0,0,0,0.04)}
+.card-title{font-size:11px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--muted);margin-bottom:18px;display:flex;align-items:center;gap:8px}
+.card-title::after{content:'';flex:1;height:1px;background:var(--border)}
+.metrics{display:grid;gap:12px;margin-bottom:22px}
+.metrics.cols4{grid-template-columns:repeat(4,1fr)}
+.metrics.cols2{grid-template-columns:repeat(2,1fr)}
+.metric{background:var(--surface);border-radius:var(--radius);padding:18px 20px;border:1px solid var(--border);box-shadow:0 1px 4px rgba(0,0,0,0.04)}
+.metric-label{font-size:11px;color:var(--muted);font-weight:600;letter-spacing:0.05em;text-transform:uppercase;margin-bottom:8px}
+.metric-value{font-size:26px;font-weight:700;color:var(--ink);font-family:'Syne',sans-serif;letter-spacing:-0.5px}
+.metric-value.green{color:var(--green-mid)}
+.form-grid{display:grid;gap:14px;margin-bottom:18px}
+.form-grid.g2{grid-template-columns:1fr 1fr}
+.form-grid.g3{grid-template-columns:1fr 1fr 1fr}
+.fgroup label{font-size:12px;font-weight:600;color:var(--muted);display:block;margin-bottom:5px;letter-spacing:0.04em;text-transform:uppercase}
+.fgroup input,.fgroup select{width:100%;padding:10px 13px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:14px;font-family:'Figtree',sans-serif;color:var(--ink);background:#fff;outline:none;transition:border-color 0.15s,box-shadow 0.15s}
+.fgroup input:focus,.fgroup select:focus{border-color:var(--green-mid);box-shadow:0 0 0 3px rgba(45,107,94,0.1)}
+.fgroup input[readonly]{background:var(--bg);color:var(--muted)}
+.btn{padding:10px 20px;border-radius:var(--radius-sm);font-size:13px;font-weight:600;cursor:pointer;border:1.5px solid var(--border);background:#fff;color:var(--ink);font-family:'Figtree',sans-serif;transition:all 0.15s;display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
+.btn:hover{border-color:var(--green-mid);background:var(--green-pale)}
+.btn.primary{background:var(--green);color:#fff;border-color:var(--green)}
+.btn.primary:hover{background:var(--green-mid);border-color:var(--green-mid);box-shadow:0 4px 12px rgba(26,60,52,0.25)}
+.btn.accent{background:var(--egg);color:var(--green);border-color:var(--egg);font-weight:700}
+.btn.accent:hover{background:var(--egg-dark);border-color:var(--egg-dark)}
+.btn.danger{color:var(--danger);border-color:#f0b8b4}
+.btn.danger:hover{background:var(--danger-bg)}
+.btn.sm{padding:6px 12px;font-size:12px}
+.btn-row{display:flex;gap:8px;justify-content:flex-end;margin-top:20px}
+.tc-wrap{border-radius:var(--radius-sm);overflow:hidden;border:1px solid var(--border)}
+table.tc{width:100%;border-collapse:collapse;font-size:13px}
+.tc thead tr{background:var(--green)}
+.tc th{padding:10px 12px;text-align:left;color:rgba(255,255,255,0.8);font-size:11px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase}
+.tc td{padding:7px 10px;border-bottom:1px solid var(--border);background:#fff}
+.tc tr:last-child td{border-bottom:none}
+.tc tr:hover td{background:var(--green-pale)}
+.tc td input{padding:6px 9px;border:1.5px solid var(--border);border-radius:6px;font-size:13px;font-family:'DM Mono',monospace;color:var(--ink);background:#fff;outline:none;width:100%;transition:border-color 0.15s}
+.tc td input:focus{border-color:var(--green-mid)}
+.day-label{font-weight:700;font-size:12px;color:var(--green);font-family:'Syne',sans-serif;letter-spacing:0.05em}
+.hrs-cell{font-family:'DM Mono',monospace;font-size:13px;font-weight:500;min-width:70px;padding-right:16px!important}
+.result-box{background:var(--green);border-radius:var(--radius);padding:24px 28px;margin-top:16px;position:relative;overflow:hidden}
+.result-box::before{content:'';position:absolute;top:-30px;right:-30px;width:120px;height:120px;background:rgba(245,200,66,0.1);border-radius:50%}
+.result-row{display:flex;justify-content:space-between;align-items:center;padding:5px 0;font-size:14px;color:rgba(255,255,255,0.65)}
+.result-row span:last-child{font-family:'DM Mono',monospace;font-weight:500;color:#fff}
+.result-divider{height:1px;background:rgba(255,255,255,0.15);margin:10px 0}
+.result-total{display:flex;justify-content:space-between;align-items:center;padding:6px 0}
+.result-total-label{font-size:16px;font-weight:600;color:#fff}
+.result-total-val{font-size:28px;font-weight:800;color:var(--egg);font-family:'Syne',sans-serif;letter-spacing:-1px}
+.badge{display:inline-block;padding:3px 9px;border-radius:20px;font-size:11px;font-weight:700}
+.badge.ot{background:#FEF3CD;color:#7D5A00}
+.badge.reg{background:#D4EDDA;color:#155724}
+.emp-item{display:flex;align-items:center;gap:14px;padding:14px 0;border-bottom:1px solid var(--border)}
+.emp-item:last-child{border-bottom:none}
+.avatar{width:42px;height:42px;border-radius:12px;background:linear-gradient(135deg,var(--egg),var(--egg-dark));color:var(--green);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:14px;flex-shrink:0;font-family:'Syne',sans-serif}
+.emp-info{flex:1}
+.emp-name{font-weight:600;font-size:15px}
+.emp-meta{font-size:12px;color:var(--muted);margin-top:2px;font-family:'DM Mono',monospace}
+.hist-card{background:var(--surface);border-radius:var(--radius);border:1px solid var(--border);padding:16px 20px;margin-bottom:10px;display:flex;align-items:center;gap:16px;transition:all 0.15s;box-shadow:0 1px 4px rgba(0,0,0,0.04)}
+.hist-card:hover{border-color:var(--green-mid);box-shadow:0 4px 12px rgba(26,60,52,0.1)}
+.hist-date{background:var(--green);border-radius:10px;padding:8px 12px;text-align:center;min-width:54px;flex-shrink:0}
+.hist-day{font-size:20px;font-weight:800;color:#fff;line-height:1;font-family:'Syne',sans-serif}
+.hist-mon{font-size:10px;color:rgba(255,255,255,0.6);margin-top:2px;font-weight:600;letter-spacing:0.05em;text-transform:uppercase}
+.hist-info{flex:1}
+.hist-name{font-weight:700;font-size:14px}
+.hist-meta{font-size:12px;color:var(--muted);margin-top:3px;display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.hist-pay{font-size:22px;font-weight:800;color:var(--green-mid);font-family:'Syne',sans-serif;letter-spacing:-0.5px;flex-shrink:0}
+.month-filter{display:flex;gap:12px;margin-bottom:20px;align-items:flex-end}
+.month-emp-card{background:var(--surface);border-radius:var(--radius);border:1px solid var(--border);padding:18px 22px;margin-bottom:10px;box-shadow:0 1px 4px rgba(0,0,0,0.04)}
+.month-emp-header{display:flex;justify-content:space-between;align-items:center}
+.month-emp-name{font-weight:700;font-size:15px}
+.month-emp-sub{font-size:12px;color:var(--muted);margin-top:3px;font-family:'DM Mono',monospace}
+.month-emp-pay{font-size:22px;font-weight:800;color:var(--green-mid);font-family:'Syne',sans-serif}
+.month-bar-bg{background:var(--bg);border-radius:4px;height:6px;margin-top:14px;overflow:hidden;border:1px solid var(--border)}
+.month-bar{background:linear-gradient(90deg,var(--green-mid),var(--green-light));height:6px;border-radius:4px;transition:width 0.5s ease}
+.month-total{background:var(--green);border-radius:var(--radius);padding:20px 26px;display:flex;justify-content:space-between;align-items:center;margin-top:16px}
+.month-total-label{color:rgba(255,255,255,0.7);font-size:14px;font-weight:500}
+.month-total-val{font-size:28px;font-weight:800;color:var(--egg);font-family:'Syne',sans-serif;letter-spacing:-1px}
+.empty{text-align:center;padding:48px;color:var(--muted);font-size:14px}
+.filter-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px}
+.section-label{font-size:11px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--muted)}
+.loading-overlay{position:fixed;inset:0;background:rgba(255,255,255,0.85);z-index:500;display:none;align-items:center;justify-content:center;flex-direction:column;gap:12px}
+.loading-overlay.show{display:flex}
+.spinner{width:36px;height:36px;border:3px solid var(--border);border-top-color:var(--green-mid);border-radius:50%;animation:spin 0.7s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.loading-text{font-size:14px;color:var(--muted);font-weight:500}
+.toast{position:fixed;bottom:24px;right:24px;z-index:9000;background:var(--green);color:#fff;padding:12px 20px;border-radius:var(--radius-sm);font-size:14px;font-weight:500;box-shadow:0 8px 24px rgba(0,0,0,0.2);transform:translateY(100px);opacity:0;transition:all 0.3s ease;display:flex;align-items:center;gap:8px}
+.toast.show{transform:translateY(0);opacity:1}
+.toast.error{background:var(--danger)}
+@media print{
+  #lock-screen,#app,#loading-overlay,.toast{display:none!important}
+  #print-area{display:block!important;margin:0;padding:0}
+  body{background:#fff;margin:0;padding:0}
+  @page{margin:18mm 16mm;size:A4 portrait}
+}
+#print-area{display:none}
+.ps-page{font-family:'Figtree',sans-serif;color:#0D1F1B;max-width:100%}
+.ps-header{display:flex;justify-content:space-between;align-items:flex-start;padding-bottom:18px;border-bottom:3px solid #1A3C34;margin-bottom:22px}
+.ps-logo{display:flex;align-items:center;gap:10px}
+.ps-logo-box{width:42px;height:42px;background:#F5C842;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:22px}
+.ps-logo-text{font-family:'Syne',sans-serif;font-size:22px;font-weight:800;color:#1A3C34}
+.ps-logo-text span{color:#D4A017}
+.ps-title-block{text-align:right}
+.ps-doc-title{font-family:'Syne',sans-serif;font-size:20px;font-weight:800;color:#1A3C34}
+.ps-doc-sub{font-size:12px;color:#6B8C85;margin-top:3px}
+.ps-info-grid{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:10px;margin-bottom:20px}
+.ps-info-box{background:#F4F8F7;border-radius:8px;padding:12px 14px;border:1px solid #C5DDD8}
+.ps-info-label{font-size:10px;font-weight:700;letter-spacing:0.07em;text-transform:uppercase;color:#6B8C85;margin-bottom:3px}
+.ps-info-val{font-size:14px;font-weight:700;color:#0D1F1B}
+.ps-table{width:100%;border-collapse:collapse;margin-bottom:20px;font-size:13px}
+.ps-table thead tr{background:#1A3C34}
+.ps-table th{padding:9px 11px;text-align:left;color:rgba(255,255,255,0.85);font-size:11px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase}
+.ps-table td{padding:8px 11px;border-bottom:1px solid #C5DDD8;font-size:13px}
+.ps-table tr:nth-child(even) td{background:#F4F8F7}
+.ps-table tr:last-child td{border-bottom:none}
+.ps-summary{background:#1A3C34;border-radius:12px;padding:20px 24px;margin-bottom:28px}
+.ps-sum-row{display:flex;justify-content:space-between;padding:4px 0;font-size:13px;color:rgba(255,255,255,0.65)}
+.ps-sum-row span:last-child{font-family:'DM Mono',monospace;color:#fff}
+.ps-sum-divider{height:1px;background:rgba(255,255,255,0.15);margin:10px 0}
+.ps-sum-total{display:flex;justify-content:space-between;align-items:center;padding:6px 0}
+.ps-sum-total-label{font-size:16px;font-weight:700;color:#fff}
+.ps-sum-total-val{font-size:24px;font-weight:800;color:#F5C842;font-family:'Syne',sans-serif}
+.ps-sign{border-top:1px solid #C5DDD8;padding-top:24px}
+.ps-sign-title{font-size:11px;font-weight:700;letter-spacing:0.07em;text-transform:uppercase;color:#6B8C85;margin-bottom:20px}
+.ps-sign-name{font-size:16px;font-weight:700;color:#0D1F1B;margin-bottom:4px}
+.ps-sign-ack{font-size:12px;color:#6B8C85;margin-bottom:28px;line-height:1.6}
+.ps-sign-row{display:flex;align-items:flex-end;gap:24px}
+.ps-sign-line-wrap{flex:1}
+.ps-sign-line{border-bottom:2px solid #0D1F1B;height:60px;margin-bottom:6px}
+.ps-sign-sub{font-size:11px;color:#6B8C85;font-weight:600;letter-spacing:0.04em;text-transform:uppercase}
+.ps-date-wrap{width:140px}
+.ps-date-line{border-bottom:2px solid #0D1F1B;height:60px;margin-bottom:6px}
+.ps-footer{margin-top:24px;padding-top:14px;border-top:1px solid #C5DDD8;display:flex;justify-content:space-between;font-size:10px;color:#6B8C85}
+</style>
+</head>
+<body>
+
+<div id="lock-screen">
+  <div class="lock-logo">
+    <div class="lock-logo-icon">🥚</div>
+    <div class="lock-logo-text">Egg <span>Ovo</span></div>
+  </div>
+  <div class="lock-card">
+    <div class="lock-title">Payroll System</div>
+    <div class="lock-sub">Enter your password to access</div>
+    <div class="lock-label">Password</div>
+    <input class="lock-input" type="password" id="pw-input" placeholder="••••••••••••" onkeydown="if(event.key==='Enter')checkPw()">
+    <div class="lock-err" id="pw-error">Incorrect password. Please try again.</div>
+    <button class="lock-btn" onclick="checkPw()">Unlock →</button>
+  </div>
+  <div class="lock-hint">Egg Ovo · Private Access Only</div>
+</div>
+
+<div class="loading-overlay" id="loading-overlay">
+  <div class="spinner"></div>
+  <div class="loading-text" id="loading-text">Loading...</div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<div id="app">
+  <div class="topbar no-print">
+    <div class="topbar-logo">
+      <div class="topbar-icon">🥚</div>
+      <div>
+        <span class="topbar-name">Egg <span>Ovo</span></span>
+        <span class="topbar-tag">Payroll</span>
+      </div>
+    </div>
+    <div class="topbar-nav">
+      <button class="nav-btn active" onclick="showPage('timecard',this)">Timecard</button>
+      <button class="nav-btn" onclick="showPage('employees',this)">Employees</button>
+      <button class="nav-btn" onclick="showPage('history',this)">History</button>
+      <button class="nav-btn" onclick="showPage('monthly',this)">Monthly</button>
+    </div>
+  </div>
+  <div class="sync-bar no-print">
+    <div class="sync-dot" id="sync-dot"></div>
+    <span id="sync-text">Connecting to cloud...</span>
+  </div>
+  <div class="main">
+
+    <!-- TIMECARD -->
+    <div id="page-timecard" class="page active">
+      <div class="card">
+        <div class="card-title">Pay Period</div>
+        <div class="form-grid g2" style="margin-bottom:14px">
+          <div class="fgroup">
+            <label>Employee</label>
+            <select id="sel-emp" onchange="loadEmpRate()"><option value="">— Select employee —</option></select>
+          </div>
+          <div class="fgroup">
+            <label>Week Start Date (Monday)</label>
+            <input type="date" id="week-start">
+          </div>
+        </div>
+        <div class="form-grid g2">
+          <div class="fgroup">
+            <label>Regular Rate ($/hr)</label>
+            <input type="number" id="reg-rate" step="0.01" placeholder="15.00" oninput="calcPay()">
+          </div>
+          <div class="fgroup">
+            <label>OT Rate — Auto 1.5x</label>
+            <input type="number" id="ot-rate" readonly>
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">Daily Hours</div>
+        <div class="tc-wrap">
+          <table class="tc">
+            <thead><tr><th style="width:50px">Day</th><th>Clock In</th><th>Clock Out</th><th style="width:100px">Break (min)</th><th style="width:90px">Hours</th></tr></thead>
+            <tbody id="days-body"></tbody>
+          </table>
+        </div>
+      </div>
+      <div id="result-box" class="result-box" style="display:none">
+        <div class="result-row"><span>Regular Hours (up to 40h)</span><span id="r-reg-hrs">—</span></div>
+        <div class="result-row"><span>Overtime Hours</span><span id="r-ot-hrs">—</span></div>
+        <div class="result-divider"></div>
+        <div class="result-row"><span>Regular Pay</span><span id="r-reg-pay">$0.00</span></div>
+        <div class="result-row"><span>Overtime Pay</span><span id="r-ot-pay">$0.00</span></div>
+        <div class="result-divider"></div>
+        <div class="result-total">
+          <span class="result-total-label">Weekly Gross Pay</span>
+          <span class="result-total-val" id="r-total">$0.00</span>
+        </div>
+      </div>
+      <div class="btn-row no-print">
+        <button class="btn" onclick="clearForm()">Clear</button>
+        <button class="btn accent" onclick="printSlip()">🖨 Print Pay Stub</button>
+        <button class="btn primary" onclick="saveRecord()">☁ Save to Cloud</button>
+      </div>
+    </div>
+
+    <!-- EMPLOYEES -->
+    <div id="page-employees" class="page">
+      <div class="card">
+        <div class="card-title">Add Employee</div>
+        <div class="form-grid g3" style="margin-bottom:14px">
+          <div class="fgroup" style="grid-column:span 2"><label>Full Name</label><input type="text" id="new-name" placeholder="e.g. Sarah Kim"></div>
+          <div class="fgroup"><label>Base Rate ($/hr)</label><input type="number" id="new-rate" step="0.01" placeholder="15.00"></div>
+        </div>
+        <button class="btn primary" onclick="addEmployee()">+ Add Employee</button>
+      </div>
+      <div class="card">
+        <div class="card-title">Roster</div>
+        <div id="emp-list"><p class="empty">No employees yet</p></div>
+      </div>
+    </div>
+
+    <!-- HISTORY -->
+    <div id="page-history" class="page">
+      <div class="metrics cols4">
+        <div class="metric"><div class="metric-label">Records</div><div class="metric-value" id="h-count">0</div></div>
+        <div class="metric"><div class="metric-label">Employees</div><div class="metric-value" id="h-emps">0</div></div>
+        <div class="metric"><div class="metric-label">Total Hours</div><div class="metric-value" id="h-hours">0h</div></div>
+        <div class="metric"><div class="metric-label">Total Paid</div><div class="metric-value green" id="h-total">$0</div></div>
+      </div>
+      <div class="filter-row">
+        <span class="section-label">Weekly Records</span>
+        <select id="filter-emp" onchange="renderHistory()" style="padding:8px 12px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:13px;font-family:'Figtree',sans-serif;outline:none">
+          <option value="">All Employees</option>
+        </select>
+      </div>
+      <div id="history-list"><p class="empty">No records saved yet</p></div>
+    </div>
+
+    <!-- MONTHLY -->
+    <div id="page-monthly" class="page">
+      <div class="card" style="padding:16px 22px">
+        <div class="month-filter">
+          <div class="fgroup" style="margin:0"><label>Year</label><select id="m-year" onchange="renderMonthly()" style="width:110px"></select></div>
+          <div class="fgroup" style="margin:0"><label>Month</label>
+            <select id="m-month" onchange="renderMonthly()" style="width:150px">
+              <option value="0">January</option><option value="1">February</option><option value="2">March</option>
+              <option value="3">April</option><option value="4">May</option><option value="5">June</option>
+              <option value="6">July</option><option value="7">August</option><option value="8">September</option>
+              <option value="9">October</option><option value="10">November</option><option value="11">December</option>
+            </select>
+          </div>
+        </div>
+      </div>
+      <div class="metrics cols2" style="margin-bottom:16px">
+        <div class="metric"><div class="metric-label">Total Hours</div><div class="metric-value" id="m-hours">0h</div></div>
+        <div class="metric"><div class="metric-label">Monthly Labor Cost</div><div class="metric-value green" id="m-total">$0.00</div></div>
+      </div>
+      <div id="monthly-breakdown"><p class="empty">No data for this month</p></div>
+    </div>
+
+  </div>
+</div>
+
+<div id="print-area"></div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-app.js";
+import { getFirestore, collection, doc, setDoc, getDocs, deleteDoc } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-firestore.js";
+const firebaseConfig = {
+  apiKey: "AIzaSyB0kvCtAvO1D06TwPDeRtXNcVD9dDHWKlQ",
+  authDomain: "egg-ovo-payroll-fdc8a.firebaseapp.com",
+  projectId: "egg-ovo-payroll-fdc8a",
+  storageBucket: "egg-ovo-payroll-fdc8a.firebasestorage.app",
+  messagingSenderId: "829921836848",
+  appId: "1:829921836848:web:bff361205aa523a86852f5"
+};
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+window._db=db; window._col=collection; window._doc=doc;
+window._setDoc=setDoc; window._getDocs=getDocs; window._deleteDoc=deleteDoc;
+window._firebaseReady=true;
+window.dispatchEvent(new Event('firebase-ready'));
+</script>
+
+<script>
+const DAYS=['MON','TUE','WED','THU','FRI','SAT','SUN'];
+let employees=[],records=[];
+
+function checkPw(){
+  const v=document.getElementById('pw-input').value;
+  const inp=document.getElementById('pw-input');
+  if(v==='eggovo2027'){
+    document.getElementById('lock-screen').style.display='none';
+    document.getElementById('app').style.display='block';
+    initApp();
+  } else {
+    document.getElementById('pw-error').style.display='block';
+    inp.classList.add('error');inp.value='';
+    setTimeout(()=>inp.classList.remove('error'),400);
+  }
+}
+window.checkPw=checkPw;
+
+function initApp(){
+  initDays();setDefaultDate();
+  if(window._firebaseReady) loadFromFirebase();
+  else window.addEventListener('firebase-ready',()=>loadFromFirebase());
+}
+
+function setSyncing(){document.getElementById('sync-dot').className='sync-dot syncing';document.getElementById('sync-text').textContent='Syncing...';}
+function setSynced(){document.getElementById('sync-dot').className='sync-dot';document.getElementById('sync-text').textContent='Connected to cloud · '+new Date().toLocaleTimeString();}
+function setSyncError(){document.getElementById('sync-dot').className='sync-dot error';document.getElementById('sync-text').textContent='Sync error — check connection';}
+
+function toast(msg,isError=false){
+  const t=document.getElementById('toast');
+  t.textContent=msg;t.className='toast'+(isError?' error':'')+' show';
+  setTimeout(()=>t.className='toast',3000);
+}
+function showLoading(msg='Loading...'){document.getElementById('loading-text').textContent=msg;document.getElementById('loading-overlay').classList.add('show');}
+function hideLoading(){document.getElementById('loading-overlay').classList.remove('show');}
+
+async function loadFromFirebase(){
+  showLoading('Loading data...');setSyncing();
+  try{
+    const es=await window._getDocs(window._col(window._db,'employees'));
+    employees=es.docs.map(d=>({id:d.id,...d.data()}));
+    const rs=await window._getDocs(window._col(window._db,'records'));
+    records=rs.docs.map(d=>({id:d.id,...d.data()}));
+    populateSelects();setSynced();
+  }catch(e){setSyncError();toast('Failed to load data',true);}
+  hideLoading();
+}
+
+window.showPage=function(p,btn){
+  document.querySelectorAll('.page').forEach(el=>el.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(el=>el.classList.remove('active'));
+  document.getElementById('page-'+p).classList.add('active');
+  if(btn)btn.classList.add('active');
+  if(p==='history'){renderHistoryStats();renderHistory();}
+  if(p==='monthly'){initMonthly();renderMonthly();}
+  if(p==='employees')renderEmpList();
+};
+
+function setDefaultDate(){
+  const today=new Date(),dow=today.getDay(),mon=new Date(today);
+  mon.setDate(today.getDate()-(dow===0?6:dow-1));
+  document.getElementById('week-start').value=mon.toISOString().split('T')[0];
+}
+
+function initDays(){
+  document.getElementById('days-body').innerHTML=DAYS.map((d,i)=>`
+    <tr>
+      <td><span class="day-label">${d}</span></td>
+      <td><input type="time" class="in-time" data-day="${i}" oninput="calcDay(${i})"></td>
+      <td><input type="time" class="out-time" data-day="${i}" oninput="calcDay(${i})"></td>
+      <td><input type="number" class="break-min" data-day="${i}" value="0" min="0" max="120" oninput="calcDay(${i})" style="width:70px"></td>
+      <td id="day-hrs-${i}" class="hrs-cell" style="color:var(--muted)">—</td>
+    </tr>`).join('');
+}
+
+window.calcDay=function(i){
+  const inT=document.querySelector(`.in-time[data-day="${i}"]`).value;
+  const outT=document.querySelector(`.out-time[data-day="${i}"]`).value;
+  const brk=parseFloat(document.querySelector(`.break-min[data-day="${i}"]`).value)||0;
+  const cell=document.getElementById(`day-hrs-${i}`);
+  if(inT&&outT){
+    const [ih,im]=inT.split(':').map(Number),[oh,om]=outT.split(':').map(Number);
+    let mins=(oh*60+om)-(ih*60+im)-brk;
+    if(mins<0)mins+=1440;
+    const hrs=Math.max(mins/60,0);
+    cell.textContent=hrs>0?hrs.toFixed(2)+'h':'0h';
+    cell.style.color=hrs>8?'#D4A017':hrs>0?'var(--green-mid)':'var(--muted)';
+  }else{cell.textContent='—';cell.style.color='var(--muted)';}
+  calcPay();
+};
+
+function getTotalHours(){
+  let t=0;
+  for(let i=0;i<7;i++){
+    const inT=document.querySelector(`.in-time[data-day="${i}"]`).value;
+    const outT=document.querySelector(`.out-time[data-day="${i}"]`).value;
+    const brk=parseFloat(document.querySelector(`.break-min[data-day="${i}"]`).value)||0;
+    if(inT&&outT){
+      const [ih,im]=inT.split(':').map(Number),[oh,om]=outT.split(':').map(Number);
+      let mins=(oh*60+om)-(ih*60+im)-brk;
+      if(mins<0)mins+=1440;
+      if(mins>0)t+=mins/60;
+    }
+  }
+  return t;
+}
+
+window.calcPay=function(){
+  const reg=parseFloat(document.getElementById('reg-rate').value)||0;
+  if(!reg){document.getElementById('result-box').style.display='none';return;}
+  const ot=reg*1.5;
+  document.getElementById('ot-rate').value=ot.toFixed(2);
+  const total=getTotalHours(),regHrs=Math.min(total,40),otHrs=Math.max(total-40,0);
+  document.getElementById('r-reg-hrs').textContent=regHrs.toFixed(2)+'h';
+  document.getElementById('r-ot-hrs').textContent=otHrs.toFixed(2)+'h';
+  document.getElementById('r-reg-pay').textContent='$'+(regHrs*reg).toFixed(2);
+  document.getElementById('r-ot-pay').textContent='$'+(otHrs*ot).toFixed(2);
+  document.getElementById('r-total').textContent='$'+(regHrs*reg+otHrs*ot).toFixed(2);
+  document.getElementById('result-box').style.display='block';
+};
+
+window.loadEmpRate=function(){
+  const emp=employees.find(e=>e.id===document.getElementById('sel-emp').value);
+  if(emp){document.getElementById('reg-rate').value=emp.rate;calcPay();}
+};
+
+function getDayData(){
+  return DAYS.map((d,i)=>{
+    const inT=document.querySelector(`.in-time[data-day="${i}"]`).value;
+    const outT=document.querySelector(`.out-time[data-day="${i}"]`).value;
+    const brk=parseFloat(document.querySelector(`.break-min[data-day="${i}"]`).value)||0;
+    let hrs=0;
+    if(inT&&outT){
+      const [ih,im]=inT.split(':').map(Number),[oh,om]=outT.split(':').map(Number);
+      let mins=(oh*60+om)-(ih*60+im)-brk;
+      if(mins<0)mins+=1440;hrs=Math.max(mins/60,0);
+    }
+    return{day:d,in:inT,out:outT,break:brk,hrs};
+  });
+}
+
+window.saveRecord=async function(){
+  const empId=document.getElementById('sel-emp').value;
+  const weekStart=document.getElementById('week-start').value;
+  const reg=parseFloat(document.getElementById('reg-rate').value);
+  if(!empId||!weekStart||!reg){toast('Please fill in all fields',true);return;}
+  const emp=employees.find(e=>e.id===empId);
+  const total=getTotalHours(),regHrs=Math.min(total,40),otHrs=Math.max(total-40,0),ot=reg*1.5,grand=regHrs*reg+otHrs*ot;
+  const rec={id:'r'+Date.now(),empId,empName:emp.name,weekStart,regRate:reg,otRate:ot,totalHrs:total,regHrs,otHrs,regPay:regHrs*reg,otPay:otHrs*ot,total:grand,days:getDayData(),savedAt:new Date().toISOString()};
+  showLoading('Saving...');setSyncing();
+  try{
+    await window._setDoc(window._doc(window._db,'records',rec.id),rec);
+    records.push(rec);setSynced();toast('Saved! '+emp.name+' — $'+grand.toFixed(2));
+  }catch(e){setSyncError();toast('Failed to save',true);}
+  hideLoading();
+};
+
+window.clearForm=function(){
+  document.getElementById('sel-emp').value='';
+  document.getElementById('reg-rate').value='';
+  document.getElementById('ot-rate').value='';
+  document.getElementById('result-box').style.display='none';
+  initDays();setDefaultDate();
+};
+
+function populateSelects(){
+  const s=document.getElementById('sel-emp'),cur=s.value;
+  s.innerHTML='<option value="">— Select employee —</option>'+employees.map(e=>`<option value="${e.id}">${e.name}</option>`).join('');
+  if(cur)s.value=cur;
+  const fe=document.getElementById('filter-emp');
+  if(fe)fe.innerHTML='<option value="">All Employees</option>'+employees.map(e=>`<option value="${e.id}">${e.name}</option>`).join('');
+}
+
+window.addEmployee=async function(){
+  const name=document.getElementById('new-name').value.trim();
+  const rate=parseFloat(document.getElementById('new-rate').value);
+  if(!name||!rate){toast('Please enter name and rate',true);return;}
+  const emp={id:'e'+Date.now(),name,rate};
+  showLoading('Saving...');setSyncing();
+  try{
+    await window._setDoc(window._doc(window._db,'employees',emp.id),emp);
+    employees.push(emp);populateSelects();renderEmpList();
+    document.getElementById('new-name').value='';document.getElementById('new-rate').value='';
+    setSynced();toast(name+' added!');
+  }catch(e){setSyncError();toast('Failed to save',true);}
+  hideLoading();
+};
+
+function renderEmpList(){
+  const el=document.getElementById('emp-list');
+  if(!employees.length){el.innerHTML='<p class="empty">No employees yet</p>';return;}
+  el.innerHTML=employees.map(e=>`
+    <div class="emp-item">
+      <div class="avatar">${e.name.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase()}</div>
+      <div class="emp-info">
+        <div class="emp-name">${e.name}</div>
+        <div class="emp-meta">$${parseFloat(e.rate).toFixed(2)}/hr &nbsp;·&nbsp; OT $${(e.rate*1.5).toFixed(2)}/hr</div>
+      </div>
+      <button class="btn sm danger" onclick="deleteEmp('${e.id}')">Remove</button>
+    </div>`).join('');
+}
+
+window.deleteEmp=async function(id){
+  if(!confirm('Remove this employee?'))return;
+  showLoading('Removing...');
+  try{
+    await window._deleteDoc(window._doc(window._db,'employees',id));
+    employees=employees.filter(e=>e.id!==id);populateSelects();renderEmpList();
+    setSynced();toast('Employee removed');
+  }catch(e){toast('Failed to remove',true);}
+  hideLoading();
+};
+
+function renderHistoryStats(){
+  const uniq=new Set(records.map(r=>r.empId)).size;
+  const hrs=records.reduce((s,r)=>s+(r.totalHrs||0),0);
+  const pay=records.reduce((s,r)=>s+(r.total||0),0);
+  document.getElementById('h-count').textContent=records.length;
+  document.getElementById('h-emps').textContent=uniq;
+  document.getElementById('h-hours').textContent=hrs.toFixed(1)+'h';
+  document.getElementById('h-total').textContent='$'+pay.toFixed(2);
+}
+
+window.renderHistory=function(){
+  const filterId=document.getElementById('filter-emp')?.value||'';
+  let list=records.slice().sort((a,b)=>b.weekStart.localeCompare(a.weekStart));
+  if(filterId)list=list.filter(r=>r.empId===filterId);
+  const el=document.getElementById('history-list');
+  if(!list.length){el.innerHTML='<p class="empty">No records found</p>';return;}
+  el.innerHTML=list.map(r=>{
+    const d=new Date(r.weekStart+'T00:00:00');
+    return`<div class="hist-card">
+      <div class="hist-date"><div class="hist-day">${d.getDate()}</div><div class="hist-mon">${d.toLocaleString('en-US',{month:'short'}).toUpperCase()}</div></div>
+      <div class="hist-info">
+        <div class="hist-name">${r.empName}</div>
+        <div class="hist-meta">${(r.totalHrs||0).toFixed(2)}h &nbsp;<span class="badge reg">REG ${(r.regHrs||0).toFixed(2)}h</span>${(r.otHrs||0)>0?` <span class="badge ot">OT ${r.otHrs.toFixed(2)}h</span>`:''}</div>
+      </div>
+      <div class="hist-pay">$${(r.total||0).toFixed(2)}</div>
+      <div style="display:flex;gap:6px;flex-shrink:0">
+        <button class="btn sm accent" onclick="printRecord('${r.id}')">🖨 Print</button>
+        <button class="btn sm danger" onclick="deleteRecord('${r.id}')">Delete</button>
+      </div>
+    </div>`;
+  }).join('');
+};
+
+window.deleteRecord=async function(id){
+  if(!confirm('Delete this record?'))return;
+  showLoading('Deleting...');
+  try{
+    await window._deleteDoc(window._doc(window._db,'records',id));
+    records=records.filter(r=>r.id!==id);renderHistory();renderHistoryStats();
+    setSynced();toast('Record deleted');
+  }catch(e){toast('Failed to delete',true);}
+  hideLoading();
+};
+
+function initMonthly(){
+  const ys=document.getElementById('m-year');
+  if(ys.children.length)return;
+  const cur=new Date().getFullYear();
+  for(let y=cur-1;y<=cur+2;y++)ys.innerHTML+=`<option value="${y}"${y===cur?' selected':''}>${y}</option>`;
+  document.getElementById('m-month').value=new Date().getMonth();
+}
+
+window.renderMonthly=function(){
+  const year=parseInt(document.getElementById('m-year').value);
+  const month=parseInt(document.getElementById('m-month').value);
+  const filtered=records.filter(r=>{const d=new Date(r.weekStart+'T00:00:00');return d.getFullYear()===year&&d.getMonth()===month;});
+  const totalHrs=filtered.reduce((s,r)=>s+(r.totalHrs||0),0);
+  const totalPay=filtered.reduce((s,r)=>s+(r.total||0),0);
+  document.getElementById('m-hours').textContent=totalHrs.toFixed(1)+'h';
+  document.getElementById('m-total').textContent='$'+totalPay.toFixed(2);
+  const byEmp={};
+  filtered.forEach(r=>{if(!byEmp[r.empId])byEmp[r.empId]={name:r.empName,hrs:0,pay:0,weeks:0};byEmp[r.empId].hrs+=(r.totalHrs||0);byEmp[r.empId].pay+=(r.total||0);byEmp[r.empId].weeks++;});
+  const el=document.getElementById('monthly-breakdown');
+  if(!filtered.length){el.innerHTML='<p class="empty">No data for this month</p>';return;}
+  el.innerHTML=Object.values(byEmp).sort((a,b)=>b.pay-a.pay).map(e=>`
+    <div class="month-emp-card">
+      <div class="month-emp-header">
+        <div><div class="month-emp-name">${e.name}</div><div class="month-emp-sub">${e.weeks} week${e.weeks>1?'s':''} · ${e.hrs.toFixed(2)} hrs</div></div>
+        <div class="month-emp-pay">$${e.pay.toFixed(2)}</div>
+      </div>
+      <div class="month-bar-bg"><div class="month-bar" style="width:${totalHrs>0?Math.min(100,e.hrs/totalHrs*100).toFixed(1):0}%"></div></div>
+    </div>`).join('')+
+    `<div class="month-total"><div class="month-total-label">Total Monthly Labor Cost</div><div class="month-total-val">$${totalPay.toFixed(2)}</div></div>`;
+};
+
+function buildPrintHTML(r,days){
+  const ws=new Date(r.weekStart+'T00:00:00'),we=new Date(ws);we.setDate(ws.getDate()+6);
+  const fmt=d=>d.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
+  const dayRows=days.map(d=>`
+    <tr>
+      <td>${d.day}</td>
+      <td style="font-family:monospace">${d.in||'—'}</td>
+      <td style="font-family:monospace">${d.out||'—'}</td>
+      <td style="text-align:center">${d.break} min</td>
+      <td style="text-align:right;font-family:monospace;font-weight:600">${d.hrs>0?d.hrs.toFixed(2)+' h':'—'}</td>
+    </tr>`).join('');
+  return`<div class="ps-page">
+    <div class="ps-header">
+      <div class="ps-logo"><div class="ps-logo-box">🥚</div><div class="ps-logo-text">Egg <span>Ovo</span></div></div>
+      <div class="ps-title-block"><div class="ps-doc-title">Weekly Pay Stub</div><div class="ps-doc-sub">Printed: ${fmt(new Date())}</div></div>
+    </div>
+    <div class="ps-info-grid">
+      <div class="ps-info-box"><div class="ps-info-label">Employee</div><div class="ps-info-val">${r.empName}</div></div>
+      <div class="ps-info-box"><div class="ps-info-label">Week Start</div><div class="ps-info-val">${fmt(ws)}</div></div>
+      <div class="ps-info-box"><div class="ps-info-label">Week End</div><div class="ps-info-val">${fmt(we)}</div></div>
+      <div class="ps-info-box"><div class="ps-info-label">Regular Rate</div><div class="ps-info-val">$${(r.regRate||0).toFixed(2)}/hr</div></div>
+    </div>
+    <table class="ps-table">
+      <thead><tr><th>Day</th><th>Clock In</th><th>Clock Out</th><th style="text-align:center">Break</th><th style="text-align:right">Hours</th></tr></thead>
+      <tbody>${dayRows}</tbody>
+    </table>
+    <div class="ps-summary">
+      <div class="ps-sum-row"><span>Regular Hours (up to 40h)</span><span>${(r.regHrs||0).toFixed(2)} h</span></div>
+      <div class="ps-sum-row"><span>Regular Pay @ $${(r.regRate||0).toFixed(2)}/hr</span><span>$${(r.regPay||0).toFixed(2)}</span></div>
+      ${(r.otHrs||0)>0?`<div class="ps-sum-row"><span>Overtime Hours (1.5x)</span><span>${r.otHrs.toFixed(2)} h</span></div><div class="ps-sum-row"><span>Overtime Pay @ $${(r.otRate||0).toFixed(2)}/hr</span><span>$${(r.otPay||0).toFixed(2)}</span></div>`:''}
+      <div class="ps-sum-divider"></div>
+      <div class="ps-sum-total"><span class="ps-sum-total-label">Total Gross Pay</span><span class="ps-sum-total-val">$${(r.total||0).toFixed(2)}</span></div>
+    </div>
+    <div class="ps-sign">
+      <div class="ps-sign-title">Employee Acknowledgment</div>
+      <div class="ps-sign-name">${r.empName}</div>
+      <div class="ps-sign-ack">I have received this pay stub and confirm that the hours and compensation listed above are accurate for the pay period of ${fmt(ws)} through ${fmt(we)}.</div>
+      <div class="ps-sign-row">
+        <div class="ps-sign-line-wrap"><div class="ps-sign-line"></div><div class="ps-sign-sub">Employee Signature</div></div>
+        <div class="ps-date-wrap"><div class="ps-date-line"></div><div class="ps-sign-sub">Date</div></div>
+      </div>
+    </div>
+    <div class="ps-footer"><span>Egg Ovo · Payroll System</span><span>Confidential — Employee Copy</span></div>
+  </div>`;
+}
+
+window.printSlip=function(){
+  const empId=document.getElementById('sel-emp').value;
+  const weekStart=document.getElementById('week-start').value;
+  const reg=parseFloat(document.getElementById('reg-rate').value);
+  if(!empId||!weekStart||!reg){toast('Please fill in all fields first',true);return;}
+  const emp=employees.find(e=>e.id===empId);
+  const total=getTotalHours(),regHrs=Math.min(total,40),otHrs=Math.max(total-40,0),ot=reg*1.5,grand=regHrs*reg+otHrs*ot;
+  const rec={empName:emp.name,weekStart,regRate:reg,otRate:ot,totalHrs:total,regHrs,otHrs,regPay:regHrs*reg,otPay:otHrs*ot,total:grand};
+  document.getElementById('print-area').innerHTML=buildPrintHTML(rec,getDayData());
+  window.print();
+};
+
+window.printRecord=function(id){
+  const r=records.find(rec=>rec.id===id);
+  if(!r)return;
+  document.getElementById('print-area').innerHTML=buildPrintHTML(r,r.days||[]);
+  window.print();
+};
+</script>
+</body>
+</html>
